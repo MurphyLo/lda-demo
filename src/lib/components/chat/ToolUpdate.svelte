@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { slide } from "svelte/transition";
 	import { MessageToolUpdateType, type MessageToolUpdate } from "$lib/types/MessageUpdate";
 	import {
 		isMessageToolCallUpdate,
@@ -180,14 +181,14 @@
 {#if toolFnName}
 	<BlockWrapper {icon} {iconBg} {iconRing} {hasNext} loading={isExecuting}>
 		<!-- Header row -->
-		<div class="flex w-full select-none items-center gap-2">
+		<div class="flex w-full items-center gap-2">
 			<button
 				type="button"
 				class="flex flex-1 cursor-pointer flex-col items-start gap-1 text-left"
 				onclick={() => (isOpen = !isOpen)}
 			>
 				<span
-					class="text-sm font-medium {isExecuting
+					class="select-none text-sm font-medium {isExecuting
 						? 'text-purple-700 dark:text-purple-300'
 						: toolError
 							? 'text-red-600 dark:text-red-400'
@@ -201,7 +202,7 @@
 					</code>
 				</span>
 				{#if isExecuting && toolProgress}
-					<span class="text-xs text-gray-500 dark:text-gray-400">{progressLabel}</span>
+					<span class="select-none text-xs text-gray-500 dark:text-gray-400">{progressLabel}</span>
 				{/if}
 			</button>
 
@@ -219,8 +220,9 @@
 
 		<!-- Expandable content -->
 		{#if isOpen}
-			<div class="mt-2 space-y-3">
-				{#each tool as update, i (`${update.subtype}-${i}`)}
+			<div transition:slide={{ duration: 250 }} class="overflow-hidden">
+				<div class="pt-2 space-y-3">
+					{#each tool as update, i (`${update.subtype}-${i}`)}
 					{#if update.subtype === MessageToolUpdateType.Call}
 						<div class="space-y-1">
 							<div
@@ -314,6 +316,7 @@
 					{/if}
 				{/each}
 			</div>
-		{/if}
+		</div>
+	{/if}
 	</BlockWrapper>
 {/if}

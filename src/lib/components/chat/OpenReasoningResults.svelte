@@ -1,6 +1,8 @@
 <script lang="ts">
 	import MarkdownRenderer from "./MarkdownRenderer.svelte";
 	import BlockWrapper from "./BlockWrapper.svelte";
+	import { slide, fade } from "svelte/transition";
+	import CarbonChevronRight from "~icons/carbon/chevron-right";
 
 	interface Props {
 		content: string;
@@ -52,30 +54,54 @@
 	iconBg="bg-gray-100 dark:bg-gray-700"
 	iconRing="ring-gray-200 dark:ring-gray-600"
 >
-	<!-- Collapsed view (clickable to expand) -->
-	<button
-		type="button"
-		class="group/text w-full cursor-pointer text-left"
-		onclick={() => (isOpen = !isOpen)}
-	>
+	<div class="flex flex-col">
+		<!-- Header view (clickable to expand) -->
+		<div class="flex w-full items-center gap-2">
+			<button
+				type="button"
+				class="group/text flex min-h-[22px] flex-1 cursor-pointer items-center gap-2 text-left"
+				onclick={() => (isOpen = !isOpen)}
+			>
+				<span
+					class="select-none text-sm font-medium leading-relaxed text-gray-500 transition-colors group-hover/text:text-gray-700 dark:text-gray-400 dark:group-hover/text:text-gray-200"
+				>
+					Thought Process
+				</span>
+				{#if !isOpen}
+					<div
+						transition:fade={{ duration: 150 }}
+						class="line-clamp-1 flex-1 select-none text-sm leading-relaxed text-gray-400 dark:text-gray-500"
+						class:animate-pulse={loading}
+					>
+						{content
+							.replace(/[#*_`~[\]]/g, "")
+							.replace(/\n+/g, " ")
+							.trim()}
+					</div>
+				{/if}
+			</button>
+
+			<button
+				type="button"
+				class="cursor-pointer"
+				onclick={() => (isOpen = !isOpen)}
+				aria-label={isOpen ? "Collapse" : "Expand"}
+			>
+				<CarbonChevronRight
+					class="size-4 text-gray-400 transition-transform duration-200 {isOpen ? 'rotate-90' : ''}"
+				/>
+			</button>
+		</div>
+
 		{#if isOpen}
 			<!-- Expanded: show full content -->
-			<div
-				class="prose prose-sm max-w-none select-none text-sm leading-relaxed text-gray-500 dark:prose-invert dark:text-gray-400"
-			>
-				<MarkdownRenderer {content} {loading} />
-			</div>
-		{:else}
-			<!-- Collapsed: 2-line preview (plain text, strip markdown) -->
-			<div
-				class="line-clamp-1 select-none text-sm leading-relaxed text-gray-500 dark:text-gray-400"
-				class:animate-pulse={loading}
-			>
-				{content
-					.replace(/[#*_`~[\]]/g, "")
-					.replace(/\n+/g, " ")
-					.trim()}
+			<div transition:slide={{ duration: 250 }} class="overflow-hidden">
+				<div
+					class="prose prose-sm max-w-none select-text pt-2 text-sm leading-relaxed text-gray-500 prose-p:first:mt-0 prose-headings:first:mt-0 dark:prose-invert dark:text-gray-400"
+				>
+					<MarkdownRenderer {content} {loading} />
+				</div>
 			</div>
 		{/if}
-	</button>
+	</div>
 </BlockWrapper>

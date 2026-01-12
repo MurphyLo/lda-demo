@@ -20,9 +20,9 @@
 	}: Props = $props();
 </script>
 
-<div class="group flex gap-2 has-[+.prose]:mb-1.5 [.prose+&]:mt-3">
+<div class="group flex items-start gap-2 has-[+.prose]:mb-1.5 [.prose+&]:mt-3">
 	<!-- Left column: icon + connector line -->
-	<div class="flex w-[22px] flex-shrink-0 flex-col items-center">
+	<div class="flex w-[22px] flex-shrink-0 self-stretch flex-col items-center">
 		<div
 			class="relative z-0 flex h-[22px] w-[22px] items-center justify-center rounded-md ring-1 {iconBg} {iconRing}"
 		>
