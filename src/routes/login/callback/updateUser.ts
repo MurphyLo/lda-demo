@@ -147,7 +147,7 @@ export async function updateUser(params: {
 			updatedAt: new Date(),
 			userAgent,
 			ip,
-			expiresAt: addWeeks(new Date(), 2),
+			expiresAt: addWeeks(new Date(), 6),
 			...(coupledCookieHash ? { coupledCookieHash } : {}),
 			...(oauthData ? { oauth: oauthData } : {}),
 		});
@@ -176,7 +176,7 @@ export async function updateUser(params: {
 			updatedAt: new Date(),
 			userAgent,
 			ip,
-			expiresAt: addWeeks(new Date(), 2),
+			expiresAt: addWeeks(new Date(), 6),
 			...(coupledCookieHash ? { coupledCookieHash } : {}),
 			...(oauthData ? { oauth: oauthData } : {}),
 		});

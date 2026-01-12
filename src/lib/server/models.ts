@@ -83,6 +83,7 @@ const openaiBaseUrl = config.OPENAI_BASE_URL
 	: undefined;
 const isHFRouter = openaiBaseUrl === "https://router.huggingface.co/v1";
 
+/*
 const listSchema = z
 	.object({
 		data: z.array(
@@ -102,6 +103,7 @@ const listSchema = z
 		),
 	})
 	.passthrough();
+*/
 
 function getChatPromptRender(_m: ModelConfig): (inputs: ChatTemplateInput) => string {
 	// Minimal template to support legacy "completions" flow if ever used.
@@ -311,6 +313,7 @@ const buildModels = async (): Promise<ProcessedModel[]> => {
 
 		// Use auth token from the start if available to avoid rate limiting issues
 		// Some APIs rate-limit unauthenticated requests more aggressively
+		/* ========== DEMO: 硬编码模型列表，跳过 API 请求 ==========
 		const response = await fetch(`${baseURL}/models`, {
 			headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
 		});
@@ -330,11 +333,28 @@ const buildModels = async (): Promise<ProcessedModel[]> => {
 		logger.info({ keys: Object.keys(json || {}) }, "[models] Response keys");
 
 		const parsed = listSchema.parse(json);
+		========== END ========== */
+
+		// DEMO: 硬编码的模型列表
+		const parsed = {
+			data: [
+				{
+					id: "MiniMax-M2.1",
+					description: "卓越多语言编程能力，专为开发与Agent任务优化",
+					logoUrl:
+						"https://sf-maas-uat-prod.oss-cn-shanghai.aliyuncs.com/Model_LOGO/minimax-color.svg",
+					providers: [{ supports_tools: true }],
+					architecture: { input_modalities: [] as string[] },
+				},
+			],
+		};
+		void authToken; // 避免未使用变量警告
 		logger.info({ count: parsed.data.length }, "[models] Parsed models count");
 
 		let modelsRaw = parsed.data.map((m) => {
-			let logoUrl: string | undefined = undefined;
-			if (isHFRouter && m.id.includes("/")) {
+			// 优先使用模型数据中已有的 logoUrl，否则自动生成（仅 HuggingFace Router）
+			let logoUrl: string | undefined = (m as { logoUrl?: string }).logoUrl;
+			if (!logoUrl && isHFRouter && m.id.includes("/")) {
 				const org = m.id.split("/")[0];
 				logoUrl = `https://huggingface.co/api/avatars/${encodeURIComponent(org)}`;
 			}

@@ -1,0 +1,47 @@
+# Production deployment with local code build (bundled MongoDB)
+# Usage: docker-compose -f docker-compose.prod.yml up -d --build
+
+services:
+  # Chat UI application with bundled MongoDB
+  chat-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        INCLUDE_DB: "true"  # Include MongoDB in the container
+    image: wechat-content-helper:0.1.0
+    container_name: chat-ui
+    ports:
+      - "3000:3000"
+    environment:
+      # OpenAI-compatible API configuration
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://api.minimaxi.com/v1}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      # Public app configuration
+      PUBLIC_APP_NAME: "${PUBLIC_APP_NAME:-Wechat Content Helper}"
+      PUBLIC_DEVELOPER_NAME: "${PUBLIC_DEVELOPER_NAME:-bnudaily}"
+      PUBLIC_DEVELOPER_URL: "${PUBLIC_DEVELOPER_URL:-https://mp.weixin.qq.com/s/DIZiyT8wryWXyfI3FTjnXg}"
+      # MCP Servers configuration
+      # Display fields (displayName, displayType, displayAuth, displayDescription) are optional and used for WelcomeModal
+      MCP_SERVERS: '${MCP_SERVERS:-[{"name": "wechat-content-helper", "url": "https://search.bnucrow.com/mcp", "displayName": "Wechat Content Helper", "displayType": "Streamable HTTP", "displayAuth": "无", "displayDescription": "搜索校园公众号历史推送文章，支持基于公众号筛选、获取 LDA 主题信息或文章正文，辅助公众号写作与活动策划。"}]}'
+      # Feature flags
+      LLM_SUMMARIZATION: "${LLM_SUMMARIZATION:-false}"
+      PUBLIC_SMOOTH_UPDATES: "${PUBLIC_SMOOTH_UPDATES:-true}"
+    volumes:
+      # Mount .env.local for additional configuration
+      - ./.env.local:/app/.env.local:ro
+      # Persist MongoDB data
+      - chat-ui-data:/data
+    restart: always
+    networks:
+      - caddy-network
+
+networks:
+  caddy-network:
+    name: caddy-network
+    external: true
+
+volumes:
+  chat-ui-data:
+    driver: local
+    name: wechat-chat-ui-data

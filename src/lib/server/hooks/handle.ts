@@ -163,7 +163,7 @@ export async function handleRequest({ event, resolve }: HandleInput): Promise<Re
 
 				await collections.sessions.updateOne(
 					{ sessionId: auth.sessionId },
-					{ $set: { updatedAt: new Date(), expiresAt: addWeeks(new Date(), 2) } }
+					{ $set: { updatedAt: new Date(), expiresAt: addWeeks(new Date(), 6) } }
 				);
 			}
 

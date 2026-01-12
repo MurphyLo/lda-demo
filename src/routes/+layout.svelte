@@ -39,6 +39,7 @@
 	});
 
 	let isNavCollapsed = $state(false);
+	let welcomeModalClosed = $state(false);
 
 	let errorToastTimeout: ReturnType<typeof setTimeout>;
 	let currentError: string | undefined = $state();
@@ -99,7 +100,7 @@
 
 	function closeWelcomeModal() {
 		if (requireAuthUser()) return;
-		settings.set({ welcomeModalSeen: true });
+		welcomeModalClosed = true;
 	}
 
 	onDestroy(() => {
@@ -191,9 +192,9 @@
 			: conversations.find((conv) => conv.id === page.params.id)?.title
 	);
 
-	// Show the welcome modal once on first app load
+	// Show the welcome modal on every page load
 	let showWelcome = $derived(
-		!$settings.welcomeModalSeen &&
+		!welcomeModalClosed &&
 			!(page.data.shared === true && page.route.id?.startsWith("/conversation/"))
 	);
 </script>
