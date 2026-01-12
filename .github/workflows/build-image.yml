@@ -76,5 +76,5 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            INCLUDE_DB=false
+            INCLUDE_DB=true
             PUBLIC_COMMIT_SHA=${{ env.GITHUB_SHA_SHORT }}
