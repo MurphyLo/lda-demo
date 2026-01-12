@@ -104,6 +104,7 @@
 		"satori": "^0.10.11",
 		"satori-html": "^0.3.2",
 		"sharp": "^0.33.4",
+		"svelte-inspect-value": "^0.10.0",
 		"tailwind-scrollbar": "^3.0.0",
 		"tailwindcss": "^3.4.0",
 		"undici": "^7.16.0",

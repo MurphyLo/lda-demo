@@ -13,6 +13,9 @@
 	import { page } from "$app/state";
 	import CarbonChevronRight from "~icons/carbon/chevron-right";
 	import BlockWrapper from "./BlockWrapper.svelte";
+	import Inspect from "svelte-inspect-value";
+	import { subscribeToTheme } from "$lib/switchTheme";
+	import { onDestroy, onMount } from "svelte";
 
 	interface Props {
 		tool: MessageToolUpdate[];
@@ -23,6 +26,38 @@
 	let { tool, loading = false, hasNext = false }: Props = $props();
 
 	let isOpen = $state(false);
+	let isDark = $state(false);
+
+	let unsubscribeTheme: (() => void) | undefined;
+
+	onMount(() => {
+		unsubscribeTheme = subscribeToTheme(({ isDark: nextIsDark }) => {
+			isDark = nextIsDark;
+		});
+	});
+
+	onDestroy(() => {
+		unsubscribeTheme?.();
+	});
+
+	// Inspect 组件统一配置
+	const inspectOptions = $derived({
+		theme: isDark ? "dark" : "light",
+		borderless: true,
+		showPreview: true,
+		showLength: false,
+		showTypes: false,
+		showTools: false,
+		heading: false,
+		search: false,
+		expandLevel: 1,
+		stringCollapse: 40,
+		previewDepth: 1,
+		previewEntries: 3,
+		animRate: 1.5,
+		stores: "full" as const,
+		quotes: "single" as const,
+	});
 
 	let toolFnName = $derived(tool.find(isMessageToolCallUpdate)?.call.name);
 	let toolError = $derived(tool.some(isMessageToolErrorUpdate));
@@ -49,24 +84,6 @@
 		mimeType: string;
 	};
 
-	const formatValue = (value: unknown): string => {
-		if (value == null) return "";
-		if (typeof value === "object") {
-			try {
-				return JSON.stringify(value, null, 2);
-			} catch {
-				return String(value);
-			}
-		}
-		return String(value);
-	};
-
-	const getOutputText = (output: ToolOutput): string | undefined => {
-		const maybeText = output["text"];
-		if (typeof maybeText !== "string") return undefined;
-		return maybeText;
-	};
-
 	const isImageBlock = (value: unknown): value is McpImageContent => {
 		if (typeof value !== "object" || value === null) return false;
 		const obj = value as Record<string, unknown>;
@@ -83,24 +100,60 @@
 		return blocks.filter(isImageBlock);
 	};
 
-	const getMetadataEntries = (output: ToolOutput): Array<[string, unknown]> => {
-		return Object.entries(output).filter(
-			([key, value]) => value != null && key !== "content" && key !== "text"
-		);
-	};
-
+	// 解析工具输出，提取文本内容并尝试解析为 JSON
 	interface ParsedToolOutput {
-		text?: string;
+		data: Record<string, unknown> | null;
 		images: McpImageContent[];
-		metadata: Array<[string, unknown]>;
 	}
 
 	const parseToolOutputs = (outputs: ToolOutput[]): ParsedToolOutput[] =>
-		outputs.map((output) => ({
-			text: getOutputText(output),
-			images: getImageBlocks(output),
-			metadata: getMetadataEntries(output),
-		}));
+		outputs.map((output) => {
+			const images = getImageBlocks(output);
+
+			// 提取文本内容：先尝试从 content 数组中的 text 块获取
+			const contentBlocks = output["content"];
+			let textContent: string | undefined;
+
+			if (Array.isArray(contentBlocks)) {
+				const textBlock = contentBlocks.find(
+					(block) => typeof block === "object" && block !== null && block["type"] === "text"
+				);
+				if (textBlock) {
+					textContent = textBlock["text"] ?? textBlock["content"];
+				}
+			}
+
+			// 如果 content 中没有找到，尝试直接获取 text 字段
+			if (!textContent && typeof output["text"] === "string") {
+				textContent = output["text"];
+			}
+
+			// 尝试解析 JSON
+			let data: Record<string, unknown> | null = null;
+			if (textContent) {
+				try {
+					const parsed = JSON.parse(textContent);
+					if (typeof parsed === "object" && parsed !== null) {
+						data = parsed;
+					}
+				} catch {
+					// JSON 解析失败，将原始文本作为 text 字段展示
+					data = { text: textContent };
+				}
+			}
+
+			// 如果没有提取到文本内容，则展示原始 output 中除 content 外的字段
+			if (!data) {
+				const filteredEntries = Object.entries(output).filter(
+					([key, value]) => value != null && key !== "content"
+				);
+				if (filteredEntries.length > 0) {
+					data = Object.fromEntries(filteredEntries);
+				}
+			}
+
+			return { data, images };
+		});
 
 	// Icon styling based on state
 	let iconBg = $derived(
@@ -176,11 +229,10 @@
 								Input
 							</div>
 							<div
-								class="rounded-md border border-gray-100 bg-white p-2 text-gray-500 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-400"
+								class="rounded-md border border-gray-100 bg-white p-2 dark:border-gray-700 dark:bg-gray-800/50"
+								style="--hover-color: transparent;"
 							>
-								<pre class="whitespace-pre-wrap break-all font-mono text-xs">{formatValue(
-										update.call.parameters
-									)}</pre>
+								<Inspect values={update.call.parameters} {...inspectOptions} />
 							</div>
 						</div>
 					{:else if update.subtype === MessageToolUpdateType.Error}
@@ -221,13 +273,13 @@
 								</svg>
 							</div>
 							<div
-								class="scrollbar-custom rounded-md border border-gray-100 bg-white p-2 text-gray-500 dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-400"
+								class="scrollbar-custom rounded-md border border-gray-100 bg-white p-2 dark:border-gray-700 dark:bg-gray-800/50"
+								style="--hover-color: transparent;"
 							>
 								{#each parseToolOutputs(update.result.outputs) as parsedOutput}
 									<div class="space-y-2">
-										{#if parsedOutput.text}
-											<pre
-												class="scrollbar-custom max-h-60 overflow-y-auto whitespace-pre-wrap break-all font-mono text-xs">{parsedOutput.text}</pre>
+										{#if parsedOutput.data}
+											<Inspect values={parsedOutput.data} {...inspectOptions} />
 										{/if}
 
 										{#if parsedOutput.images.length > 0}
@@ -240,13 +292,6 @@
 													/>
 												{/each}
 											</div>
-										{/if}
-
-										{#if parsedOutput.metadata.length > 0}
-											<pre
-												class="scrollbar-custom max-h-60 overflow-y-auto whitespace-pre-wrap break-all font-mono text-xs">{formatValue(
-													Object.fromEntries(parsedOutput.metadata)
-												)}</pre>
 										{/if}
 									</div>
 								{/each}

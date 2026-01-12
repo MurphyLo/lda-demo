@@ -226,6 +226,13 @@ async function* smoothAsyncIterator(
 				pendingNonStreamUpdates.push(update);
 			}
 			eventTarget.dispatchEvent(new Event("data"));
+
+			// IMPORTANT: prevent the consumer from racing ahead past a non-stream update.
+			// This keeps UI ordering stable: we won't enqueue stream tokens that occur *after*
+			// a tool/status/finalAnswer update until that update has been rendered.
+			if (update.type !== MessageUpdateType.Stream) {
+				await waitForEvent(eventTarget, "drain");
+			}
 		}
 		iteratorDone = true;
 		eventTarget.dispatchEvent(new Event("done"));
@@ -237,10 +244,20 @@ async function* smoothAsyncIterator(
 
 	// Main animation loop
 	while (!iteratorDone || charQueue.length > 0 || pendingNonStreamUpdates.length > 0) {
-		// First, emit any pending non-stream updates immediately
-		while (pendingNonStreamUpdates.length > 0) {
-			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-			yield pendingNonStreamUpdates.shift()!;
+		// Maintain stable ordering with smooth typing:
+		// - If a non-stream update is pending, finish typing the buffered characters first.
+		// - Only when the character queue is empty do we emit the non-stream update(s).
+		if (pendingNonStreamUpdates.length > 0) {
+			if (charQueue.length === 0) {
+				while (pendingNonStreamUpdates.length > 0) {
+					// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+					yield pendingNonStreamUpdates.shift()!;
+				}
+				// Allow the background consumer to continue after we've rendered the barrier update.
+				eventTarget.dispatchEvent(new Event("drain"));
+				continue;
+			}
+			// else: keep animating charQueue until empty
 		}
 
 		// Process character queue with smooth animation
