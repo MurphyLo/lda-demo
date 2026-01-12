@@ -256,7 +256,7 @@
 								<div
 									class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500"
 								>
-									Output
+									Result
 								</div>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
