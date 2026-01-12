@@ -66,6 +66,11 @@ export interface MCPServer {
 	errorMessage?: string;
 	// Indicates server reports or appears to require OAuth or other auth
 	authRequired?: boolean;
+	// Display fields for WelcomeModal
+	displayName?: string;
+	displayType?: string;
+	displayAuth?: string;
+	displayDescription?: string;
 }
 
 export interface MCPServerApi {

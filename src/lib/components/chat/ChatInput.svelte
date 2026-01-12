@@ -402,13 +402,13 @@
 
 					{#if $enabledServersCount > 0}
 						<div
-							class="ml-1.5 inline-flex h-8 items-center gap-1.5 rounded-full border border-blue-500/10 bg-blue-600/10 pl-2 pr-1 text-xs font-semibold text-blue-700 dark:bg-blue-600/20 dark:text-blue-400 sm:h-7"
+							class="ml-1.5 inline-flex h-8 items-center gap-1.5 rounded-full border border-blue-500/10 bg-blue-600/10 px-2 text-xs font-semibold text-blue-700 dark:bg-blue-600/20 dark:text-blue-400 sm:h-7"
 							class:grayscale={!modelSupportsTools}
 							class:opacity-60={!modelSupportsTools}
 							class:cursor-help={!modelSupportsTools}
 							title={modelSupportsTools
 								? "MCP servers enabled"
-								: "Current model doesn’t support tools"}
+								: "Current model doesn't support tools"}
 						>
 							<button
 								class="inline-flex cursor-pointer select-none items-center gap-1 bg-transparent p-0 leading-none text-current focus:outline-none"
@@ -417,6 +417,7 @@
 								onclick={() => (isMcpManagerOpen = true)}
 								class:line-through={!modelSupportsTools}
 							>
+								<!-- 
 								{#if selectedServers.length}
 									<span class="flex items-center -space-x-1">
 										{#each selectedServers.slice(0, 3) as server (server.id)}
@@ -434,7 +435,10 @@
 									</span>
 								{/if}
 								MCP ({$enabledServersCount})
+								-->
+								MCP
 							</button>
+							<!-- 
 							<button
 								class="grid size-5 place-items-center rounded-full bg-blue-600/15 text-blue-700 transition-colors hover:bg-blue-600/25 dark:bg-blue-600/25 dark:text-blue-300 dark:hover:bg-blue-600/35"
 								aria-label="Disable all MCP servers"
@@ -443,6 +447,7 @@
 							>
 								<CarbonClose class="size-3.5" />
 							</button>
+							-->
 						</div>
 					{/if}
 				</div>

@@ -11,7 +11,7 @@ import { getClient } from "$lib/server/mcp/clientPool";
 import { attachFileRefsToArgs, type FileRefResolver } from "./fileRefs";
 import type { Client } from "@modelcontextprotocol/sdk/client";
 
-export type Primitive = string | number | boolean;
+export type Primitive = string | number | boolean | Primitive[] | { [key: string]: Primitive };
 
 export type ToolRun = {
 	name: string;

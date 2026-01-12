@@ -14,7 +14,7 @@ import type { Stream } from "openai/streaming";
 import { buildToolPreprompt } from "../utils/toolPrompt";
 import type { EndpointMessage } from "../../endpoints/endpoints";
 import { resolveRouterTarget } from "./routerResolution";
-import { executeToolCalls, type NormalizedToolCall } from "./toolInvocation";
+import { executeToolCalls, type NormalizedToolCall, type Primitive } from "./toolInvocation";
 import { drainPool } from "$lib/server/mcp/clientPool";
 import type { TextGenerationContext } from "../types";
 import { hasAuthHeader, isStrictHfMcpLogin, hasNonEmptyToken } from "$lib/server/mcp/hf";
@@ -356,9 +356,25 @@ export async function* runMcpFlow({
 			tool_choice: "auto",
 		};
 
-		const toPrimitive = (value: unknown) => {
+		const toPrimitive = (value: unknown): ReturnType<typeof toPrimitive> => {
 			if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
 				return value;
+			}
+			if (Array.isArray(value)) {
+				const arr: Primitive[] = [];
+				for (const item of value) {
+					const prim = toPrimitive(item);
+					if (prim !== undefined) arr.push(prim);
+				}
+				return arr.length > 0 ? arr : undefined;
+			}
+			if (typeof value === "object" && value !== null) {
+				const obj: Record<string, Primitive> = {};
+				for (const [k, v] of Object.entries(value)) {
+					const prim = toPrimitive(v);
+					if (prim !== undefined) obj[k] = prim;
+				}
+				return Object.keys(obj).length > 0 ? obj : undefined;
 			}
 			return undefined;
 		};

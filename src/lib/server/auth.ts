@@ -88,7 +88,7 @@ export function refreshSessionCookie(cookies: Cookies, sessionId: string) {
 		sameSite,
 		secure,
 		httpOnly: true,
-		expires: addWeeks(new Date(), 2),
+		expires: addWeeks(new Date(), 6),
 	});
 }
 
@@ -205,7 +205,7 @@ export function tokenSetToSessionOauth(tokenSet: TokenSet): Session["oauth"] {
 			value: tokenSet.access_token,
 			expiresAt: tokenSet.expires_at
 				? subMinutes(new Date(tokenSet.expires_at * 1000), 1)
-				: addWeeks(new Date(), 2),
+				: addWeeks(new Date(), 6),
 		},
 		refreshToken: tokenSet.refresh_token || undefined,
 	};

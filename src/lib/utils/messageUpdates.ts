@@ -187,68 +187,104 @@ async function* streamMessageUpdatesToFullWords(
 }
 
 /**
- * Attempts to smooth out the time between values emitted by an async iterator
- * by waiting for the average time between values to emit the next value
+ * Smooth async iterator inspired by lobe-chat's smooth typing effect.
+ * Uses frame-based timing with dynamic speed adjustment for a typewriter-like effect.
+ *
+ * Key features:
+ * - Characters are queued and emitted one-by-one for smooth animation
+ * - Dynamic speed adjustment: speeds up when queue is long, slows down when short
+ * - Non-stream updates (tools, status) are emitted immediately
+ * - Uses ~60fps frame timing similar to requestAnimationFrame
  */
-async function* smoothAsyncIterator<T>(iterator: AsyncGenerator<T>): AsyncGenerator<T> {
+async function* smoothAsyncIterator(
+	iterator: AsyncGenerator<MessageUpdate>
+): AsyncGenerator<MessageUpdate> {
+	// Animation configuration
+	const FRAME_INTERVAL_MS = 16; // ~60fps, similar to requestAnimationFrame
+	const START_ANIMATION_SPEED = 30; // Starting characters per second
+
+	// Event target for signaling new data
 	const eventTarget = new EventTarget();
-	let done = false;
-	const valuesBuffer: T[] = [];
-	const valueTimesMS: number[] = [];
 
-	const next = async () => {
-		const obj = await iterator.next();
-		if (obj.done) {
-			done = true;
-		} else {
-			valuesBuffer.push(obj.value);
-			valueTimesMS.push(performance.now());
-			next();
+	// State for character queue and animation
+	const charQueue: string[] = [];
+	const pendingNonStreamUpdates: MessageUpdate[] = [];
+	let iteratorDone = false;
+	let currentSpeed = START_ANIMATION_SPEED;
+	let lastQueueLength = 0;
+	let accumulatedTime = 0;
+	let lastFrameTime = performance.now();
+
+	// Background task to consume the iterator
+	const consumeIterator = (async () => {
+		for await (const update of iterator) {
+			if (update.type === MessageUpdateType.Stream) {
+				// Split token into individual characters for smooth animation
+				charQueue.push(...update.token.split(""));
+			} else {
+				// Non-stream updates are queued separately for immediate emission
+				pendingNonStreamUpdates.push(update);
+			}
+			eventTarget.dispatchEvent(new Event("data"));
 		}
-		eventTarget.dispatchEvent(new Event("next"));
-	};
-	next();
+		iteratorDone = true;
+		eventTarget.dispatchEvent(new Event("done"));
+	})();
 
-	let timeOfLastEmitMS = performance.now();
-	while (!done || valuesBuffer.length > 0) {
-		// Only consider the last X times between tokens
-		const sampledTimesMS = valueTimesMS.slice(-30);
+	// Helper to wait for data or timeout
+	const waitForDataOrTimeout = (ms: number) =>
+		Promise.race([sleep(ms), waitForEvent(eventTarget, "data"), waitForEvent(eventTarget, "done")]);
 
-		// Get the total time spent in abnormal periods
-		const anomalyThresholdMS = 2000;
-		const anomalyDurationMS = sampledTimesMS
-			.map((time, i, times) => time - times[i - 1])
-			.slice(1)
-			.filter((time) => time > anomalyThresholdMS)
-			.reduce((a, b) => a + b, 0);
+	// Main animation loop
+	while (!iteratorDone || charQueue.length > 0 || pendingNonStreamUpdates.length > 0) {
+		// First, emit any pending non-stream updates immediately
+		while (pendingNonStreamUpdates.length > 0) {
+			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+			yield pendingNonStreamUpdates.shift()!;
+		}
 
-		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-		const totalTimeMSBetweenValues = sampledTimesMS.at(-1)! - sampledTimesMS[0];
-		const timeMSBetweenValues = totalTimeMSBetweenValues - anomalyDurationMS;
+		// Process character queue with smooth animation
+		if (charQueue.length > 0) {
+			const currentTime = performance.now();
+			const frameDuration = currentTime - lastFrameTime;
+			lastFrameTime = currentTime;
+			accumulatedTime += frameDuration;
 
-		const averageTimeMSBetweenValues = Math.min(
-			200,
-			timeMSBetweenValues / (sampledTimesMS.length - 1)
-		);
-		const timeSinceLastEmitMS = performance.now() - timeOfLastEmitMS;
+			// Dynamic speed adjustment (lobe-chat algorithm)
+			// Speed up when queue is long, slow down when queue is short
+			const targetSpeed = Math.max(START_ANIMATION_SPEED, charQueue.length);
+			// Smoother speed change based on queue length changes
+			const speedChangeRate = Math.abs(charQueue.length - lastQueueLength) * 0.0008 + 0.005;
+			currentSpeed += (targetSpeed - currentSpeed) * speedChangeRate;
 
-		// Emit after waiting duration or cancel if "next" event is emitted
-		const gotNext = await Promise.race([
-			sleep(Math.max(5, averageTimeMSBetweenValues - timeSinceLastEmitMS)),
-			waitForEvent(eventTarget, "next"),
-		]);
+			// Calculate characters to process based on accumulated time and current speed
+			const charsToProcess = Math.floor((accumulatedTime * currentSpeed) / 1000);
 
-		// Go to next iteration so we can re-calculate when to emit
-		if (gotNext) continue;
+			if (charsToProcess > 0) {
+				accumulatedTime -= (charsToProcess * 1000) / currentSpeed;
 
-		// Nothing in buffer to emit
-		if (valuesBuffer.length === 0) continue;
+				const actualChars = Math.min(charsToProcess, charQueue.length);
+				const token = charQueue.splice(0, actualChars).join("");
 
-		// Emit
-		timeOfLastEmitMS = performance.now();
-		// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-		yield valuesBuffer.shift()!;
+				yield {
+					type: MessageUpdateType.Stream,
+					token,
+				} as MessageUpdate;
+			}
+
+			lastQueueLength = charQueue.length;
+
+			// Wait for next frame
+			await sleep(FRAME_INTERVAL_MS);
+		} else if (!iteratorDone) {
+			// Queue is empty but iterator is not done, wait for new data
+			await waitForDataOrTimeout(100);
+			lastFrameTime = performance.now(); // Reset frame time after waiting
+		}
 	}
+
+	// Ensure iterator consumption is complete
+	await consumeIterator;
 }
 
 // Tool update type guards for UI rendering

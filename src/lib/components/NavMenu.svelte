@@ -10,7 +10,7 @@
 <script lang="ts">
 	import { base } from "$app/paths";
 
-	import Logo from "$lib/components/icons/Logo.svelte";
+	// import Logo from "$lib/components/icons/Logo.svelte";
 	import IconSun from "$lib/components/icons/IconSun.svelte";
 	import IconMoon from "$lib/components/icons/IconMoon.svelte";
 	import { switchTheme, subscribeToTheme } from "$lib/switchTheme";
@@ -131,11 +131,15 @@
 	class="sticky top-0 flex flex-none touch-none items-center justify-between px-1.5 py-3.5 max-sm:pt-0"
 >
 	<a
-		class="flex select-none items-center rounded-xl text-lg font-semibold"
-		href="{publicConfig.PUBLIC_ORIGIN}{base}/"
+		class="ml-4 flex select-none items-center rounded-xl text-lg font-semibold underline decoration-gray-400 underline-offset-2 hover:decoration-gray-600 dark:decoration-gray-500 dark:hover:decoration-gray-300"
+		href={publicConfig.PUBLIC_DEVELOPER_URL || "#"}
+		target="_blank"
+		rel="noopener noreferrer"
 	>
+		<!-- Logo icon - commented out for now, can be restored later
 		<Logo classNames="dark:invert mr-[2px]" />
-		{publicConfig.PUBLIC_APP_NAME}
+		-->
+		{publicConfig.PUBLIC_DEVELOPER_NAME || "Developer"}
 	</a>
 	<a
 		href={`${base}/`}

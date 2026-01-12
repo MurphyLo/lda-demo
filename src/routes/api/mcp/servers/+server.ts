@@ -1,11 +1,22 @@
 import type { MCPServer } from "$lib/types/Tool";
 import { config } from "$lib/server/config";
 
+interface McpServerEnvConfig {
+	name: string;
+	url: string;
+	headers?: Record<string, string>;
+	// Display fields for WelcomeModal
+	displayName?: string;
+	displayType?: string;
+	displayAuth?: string;
+	displayDescription?: string;
+}
+
 export async function GET() {
 	// Parse MCP_SERVERS environment variable
 	const mcpServersEnv = config.MCP_SERVERS || "[]";
 
-	let servers: Array<{ name: string; url: string; headers?: Record<string, string> }> = [];
+	let servers: McpServerEnvConfig[] = [];
 
 	try {
 		servers = JSON.parse(mcpServersEnv);
@@ -26,6 +37,11 @@ export async function GET() {
 		// headers intentionally omitted
 		isLocked: false, // Base servers can be toggled by users
 		status: undefined, // Status determined client-side via health check
+		// Display fields for WelcomeModal
+		displayName: server.displayName,
+		displayType: server.displayType,
+		displayAuth: server.displayAuth,
+		displayDescription: server.displayDescription,
 	}));
 
 	return Response.json(mcpServers);

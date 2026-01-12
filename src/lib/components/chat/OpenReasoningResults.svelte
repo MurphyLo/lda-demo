@@ -61,14 +61,14 @@
 		{#if isOpen}
 			<!-- Expanded: show full content -->
 			<div
-				class="prose prose-sm max-w-none text-sm leading-relaxed text-gray-500 dark:prose-invert dark:text-gray-400"
+				class="prose prose-sm max-w-none select-none text-sm leading-relaxed text-gray-500 dark:prose-invert dark:text-gray-400"
 			>
 				<MarkdownRenderer {content} {loading} />
 			</div>
 		{:else}
 			<!-- Collapsed: 2-line preview (plain text, strip markdown) -->
 			<div
-				class="line-clamp-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400"
+				class="line-clamp-1 select-none text-sm leading-relaxed text-gray-500 dark:text-gray-400"
 				class:animate-pulse={loading}
 			>
 				{content
