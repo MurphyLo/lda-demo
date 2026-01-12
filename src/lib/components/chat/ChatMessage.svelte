@@ -263,9 +263,9 @@
 				{/if}
 				{#each blocks as block, blockIndex (block.type === "tool" ? `${block.uuid}-${blockIndex}` : `text-${blockIndex}`)}
 					{@const nextBlock = blocks[blockIndex + 1]}
-					{@const nextBlockHasThink =
-						nextBlock?.type === "text" && THINK_BLOCK_TEST_REGEX.test(nextBlock.content)}
-					{@const nextIsLinkable = nextBlock?.type === "tool" || nextBlockHasThink}
+					{@const nextIsLinkable =
+						nextBlock?.type === "tool" ||
+						(nextBlock?.type === "text" && /^\s*<think>/i.test(nextBlock.content))}
 					{#if block.type === "tool"}
 						<div data-exclude-from-copy class="has-[+.prose]:mb-3 [.prose+&]:mt-4">
 							<ToolUpdate tool={block.updates} {loading} hasNext={nextIsLinkable} />
@@ -278,9 +278,9 @@
 						{#if hasClientThink}
 							{@const parts = block.content.split(THINK_BLOCK_REGEX)}
 							{#each parts as part, partIndex}
-								{@const remainingParts = parts.slice(partIndex + 1)}
 								{@const hasMoreLinkable =
-									remainingParts.some((p) => p && THINK_BLOCK_TEST_REGEX.test(p)) || nextIsLinkable}
+									(parts[partIndex + 1] === undefined || parts[partIndex + 1].trim().length === 0) &&
+									(parts[partIndex + 2] !== undefined || nextIsLinkable)}
 								{#if part && part.startsWith("<think>")}
 									{@const isClosed = part.endsWith("</think>")}
 									{@const thinkContent = part.slice(7, isClosed ? -8 : undefined)}
