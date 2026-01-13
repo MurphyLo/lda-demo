@@ -55,6 +55,7 @@ export enum MessageToolUpdateType {
 	Error = "error",
 	ETA = "eta",
 	Progress = "progress",
+	AllComplete = "allComplete",
 }
 
 interface MessageToolUpdateBase<TSubtype extends MessageToolUpdateType> {
@@ -87,12 +88,18 @@ export interface MessageToolProgressUpdate
 	message?: string;
 }
 
+export interface MessageToolAllCompleteUpdate
+	extends MessageToolUpdateBase<MessageToolUpdateType.AllComplete> {
+	delayMs: number;
+}
+
 export type MessageToolUpdate =
 	| MessageToolCallUpdate
 	| MessageToolResultUpdate
 	| MessageToolErrorUpdate
 	| MessageToolEtaUpdate
-	| MessageToolProgressUpdate;
+	| MessageToolProgressUpdate
+	| MessageToolAllCompleteUpdate;
 
 export enum MessageReasoningUpdateType {
 	Stream = "stream",

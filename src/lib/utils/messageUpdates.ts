@@ -6,6 +6,7 @@ import {
 	type MessageToolResultUpdate,
 	type MessageToolErrorUpdate,
 	type MessageToolProgressUpdate,
+	type MessageToolAllCompleteUpdate,
 	MessageUpdateType,
 	MessageToolUpdateType,
 } from "$lib/types/MessageUpdate";
@@ -313,6 +314,11 @@ export const isMessageToolProgressUpdate = (
 	update: MessageUpdate
 ): update is MessageToolProgressUpdate =>
 	isMessageToolUpdate(update) && update.subtype === MessageToolUpdateType.Progress;
+
+export const isMessageToolAllCompleteUpdate = (
+	update: MessageUpdate
+): update is MessageToolAllCompleteUpdate =>
+	isMessageToolUpdate(update) && update.subtype === MessageToolUpdateType.AllComplete;
 
 const defaultSleep = (ms: number): Promise<void> =>
 	new Promise((resolve) => setTimeout(resolve, ms));
