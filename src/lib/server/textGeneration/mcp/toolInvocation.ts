@@ -12,7 +12,7 @@ import { attachFileRefsToArgs, type FileRefResolver } from "./fileRefs";
 import type { Client } from "@modelcontextprotocol/sdk/client";
 
 // Delay before continuing to the next model request after all tools complete (ms)
-const TOOL_COMPLETE_DELAY_MS = 2000;
+const TOOL_COMPLETE_DELAY_MS = 3000;
 
 export type Primitive = string | number | boolean | Primitive[] | { [key: string]: Primitive };
 

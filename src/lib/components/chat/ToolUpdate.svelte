@@ -93,7 +93,7 @@
 
 		// Auto-collapse after delay when execution completes
 		if (!isExecuting && wasExecuting) {
-			const delayMs = allCompleteUpdate?.delayMs ?? 2000;
+			const delayMs = allCompleteUpdate?.delayMs ?? 3000;
 
 			// Clear any existing timer
 			if (collapseTimer) {
