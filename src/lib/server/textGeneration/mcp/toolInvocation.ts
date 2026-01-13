@@ -11,6 +11,9 @@ import { getClient } from "$lib/server/mcp/clientPool";
 import { attachFileRefsToArgs, type FileRefResolver } from "./fileRefs";
 import type { Client } from "@modelcontextprotocol/sdk/client";
 
+// Delay before continuing to the next model request after all tools complete (ms)
+const TOOL_COMPLETE_DELAY_MS = 2000;
+
 export type Primitive = string | number | boolean | Primitive[] | { [key: string]: Primitive };
 
 export type ToolRun = {
@@ -305,6 +308,20 @@ export async function* executeToolCalls({
 			toolMessages.push({ role: "tool", tool_call_id: id, content: `Error: ${r.error}` });
 		}
 	}
+
+	// Notify frontend that all tools are complete and delay is starting
+	yield {
+		type: "update",
+		update: {
+			type: MessageUpdateType.Tool,
+			subtype: MessageToolUpdateType.AllComplete,
+			uuid: prepared[0]?.uuid ?? randomUUID(),
+			delayMs: TOOL_COMPLETE_DELAY_MS,
+		},
+	};
+
+	// Wait for delay to allow frontend to display results before continuing
+	await new Promise((resolve) => setTimeout(resolve, TOOL_COMPLETE_DELAY_MS));
 
 	yield { type: "complete", summary: { toolMessages, toolRuns } };
 }

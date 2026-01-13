@@ -6,6 +6,7 @@
 		isMessageToolErrorUpdate,
 		isMessageToolProgressUpdate,
 		isMessageToolResultUpdate,
+		isMessageToolAllCompleteUpdate,
 	} from "$lib/utils/messageUpdates";
 	import { formatToolProgressLabel } from "$lib/utils/toolProgress";
 	import LucideHammer from "~icons/lucide/hammer";
@@ -28,6 +29,9 @@
 
 	let isOpen = $state(false);
 	let isDark = $state(false);
+	let wasExecuting = $state(false);
+	let initialized = $state(false);
+	let collapseTimer: ReturnType<typeof setTimeout> | null = null;
 
 	let unsubscribeTheme: (() => void) | undefined;
 
@@ -38,6 +42,9 @@
 	});
 
 	onDestroy(() => {
+		if (collapseTimer) {
+			clearTimeout(collapseTimer);
+		}
 		unsubscribeTheme?.();
 	});
 
@@ -65,6 +72,43 @@
 	let toolDone = $derived(tool.some(isMessageToolResultUpdate));
 	let isExecuting = $derived(!toolDone && !toolError && loading);
 	let toolSuccess = $derived(toolDone && !toolError);
+	let allCompleteUpdate = $derived(tool.find(isMessageToolAllCompleteUpdate));
+
+	// Auto expand/collapse logic
+	$effect(() => {
+		// Initialize: if already executing, auto-expand
+		if (!initialized) {
+			initialized = true;
+			if (isExecuting) {
+				isOpen = true;
+				wasExecuting = true;
+				return;
+			}
+		}
+
+		// Auto-expand when execution starts
+		if (isExecuting && !wasExecuting) {
+			isOpen = true;
+		}
+
+		// Auto-collapse after delay when execution completes
+		if (!isExecuting && wasExecuting) {
+			const delayMs = allCompleteUpdate?.delayMs ?? 2000;
+
+			// Clear any existing timer
+			if (collapseTimer) {
+				clearTimeout(collapseTimer);
+			}
+
+			collapseTimer = setTimeout(() => {
+				isOpen = false;
+				collapseTimer = null;
+			}, delayMs);
+		}
+
+		wasExecuting = isExecuting;
+	});
+
 	let toolProgress = $derived.by(() => {
 		for (let i = tool.length - 1; i >= 0; i -= 1) {
 			const update = tool[i];
