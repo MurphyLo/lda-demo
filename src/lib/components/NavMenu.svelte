@@ -130,17 +130,20 @@
 <div
 	class="sticky top-0 flex flex-none touch-none items-center justify-between px-1.5 py-3.5 max-sm:pt-0"
 >
-	<a
-		class="ml-4 flex select-none items-center rounded-xl text-lg font-semibold underline decoration-gray-400 underline-offset-2 hover:decoration-gray-600 dark:decoration-gray-500 dark:hover:decoration-gray-300"
-		href={publicConfig.PUBLIC_DEVELOPER_URL || "#"}
-		target="_blank"
-		rel="noopener noreferrer"
-	>
-		<!-- Logo icon - commented out for now, can be restored later
-		<Logo classNames="dark:invert mr-[2px]" />
-		-->
-		{publicConfig.PUBLIC_DEVELOPER_NAME || "Developer"}
-	</a>
+	<div class="ml-2 flex select-none items-center text-lg">
+		<span class="font-normal text-gray-400 dark:text-gray-500">made by</span>
+		<a
+			class="ml-1 font-semibold underline decoration-gray-400 underline-offset-2 hover:decoration-gray-600 dark:decoration-gray-500 dark:hover:decoration-gray-300"
+			href={publicConfig.PUBLIC_DEVELOPER_URL || "#"}
+			target="_blank"
+			rel="noopener noreferrer"
+		>
+			<!-- Logo icon - commented out for now, can be restored later
+			<Logo classNames="dark:invert mr-[2px]" />
+			-->
+			{publicConfig.PUBLIC_DEVELOPER_NAME || "Developer"}
+		</a>
+	</div>
 	<a
 		href={`${base}/`}
 		onclick={handleNewChatClick}
