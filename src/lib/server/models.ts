@@ -335,20 +335,55 @@ const buildModels = async (): Promise<ProcessedModel[]> => {
 		const parsed = listSchema.parse(json);
 		========== END ========== */
 
-		// DEMO: 硬编码的模型列表
-		const parsed = {
-			data: [
+		// Read model list from STATIC_MODELS env var, with hardcoded fallback
+		const staticModelsEnv =
+			(Reflect.get(config, "STATIC_MODELS") as string | undefined) ?? "";
+		type StaticModelEntry = {
+			id: string;
+			displayName?: string;
+			description?: string;
+			logoUrl?: string;
+			supports_tools?: boolean;
+			multimodal?: boolean;
+		};
+		let staticModels: StaticModelEntry[];
+		if (staticModelsEnv.trim()) {
+			try {
+				staticModels = JSON5.parse(sanitizeJSONEnv(staticModelsEnv, "[]"));
+				logger.info(
+					{ count: staticModels.length },
+					"[models] Loaded models from STATIC_MODELS env"
+				);
+			} catch (error) {
+				logger.error(error, "[models] Failed to parse STATIC_MODELS env");
+				throw new Error("STATIC_MODELS env var contains invalid JSON");
+			}
+		} else {
+			staticModels = [
 				{
 					id: "MiniMax-M2.1",
 					description: "卓越多语言编程能力，专为开发与Agent任务优化",
 					logoUrl:
 						"https://sf-maas-uat-prod.oss-cn-shanghai.aliyuncs.com/Model_LOGO/minimax-color.svg",
-					providers: [{ supports_tools: true }],
-					architecture: { input_modalities: [] as string[] },
+					supports_tools: true,
 				},
-			],
+			];
+		}
+		const parsed = {
+			data: staticModels.map((m) => ({
+				id: m.id,
+				displayName: m.displayName,
+				description: m.description,
+				logoUrl: m.logoUrl,
+				providers: m.supports_tools
+					? [{ supports_tools: true as const }]
+					: ([] as { supports_tools?: boolean }[]),
+				architecture: {
+					input_modalities: m.multimodal ? ["image"] : ([] as string[]),
+				},
+			})),
 		};
-		void authToken; // 避免未使用变量警告
+		void authToken;
 		logger.info({ count: parsed.data.length }, "[models] Parsed models count");
 
 		let modelsRaw = parsed.data.map((m) => {
@@ -370,7 +405,7 @@ const buildModels = async (): Promise<ProcessedModel[]> => {
 			return {
 				id: m.id,
 				name: m.id,
-				displayName: m.id,
+				displayName: (m as { displayName?: string }).displayName || m.id,
 				description: m.description,
 				logoUrl,
 				providers: m.providers,
