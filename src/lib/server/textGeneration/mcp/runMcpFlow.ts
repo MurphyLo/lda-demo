@@ -676,6 +676,16 @@ export async function* runMcpFlow({
 						})) as NormalizedToolCall[];
 				}
 
+				// Enforce single-tool execution per round even if the model emitted multiple tool calls.
+				// This keeps UI ordering simple and predictable.
+				if (calls.length > 1) {
+					logger.info(
+						{ requestedToolCount: calls.length, keptToolName: calls[0]?.name },
+						"[mcp] multiple tool calls requested; keeping only the first"
+					);
+					calls = calls.slice(0, 1);
+				}
+
 				// Include the assistant message with tool_calls so the next round
 				// sees both the calls and their outputs, matching MCP branch behavior.
 				const toolCalls: ChatCompletionMessageToolCall[] = calls.map((call) => ({
