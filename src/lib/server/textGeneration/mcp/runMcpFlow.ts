@@ -417,7 +417,7 @@ export async function* runMcpFlow({
 			tool_choice: "auto",
 		};
 
-		const toPrimitive = (value: unknown): ReturnType<typeof toPrimitive> => {
+		const toPrimitive = (value: unknown): Primitive | undefined => {
 			if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
 				return value;
 			}

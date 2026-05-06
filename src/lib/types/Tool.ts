@@ -3,9 +3,11 @@ export enum ToolResultStatus {
 	Error = "error",
 }
 
+export type Primitive = string | number | boolean | Primitive[] | { [key: string]: Primitive };
+
 export interface ToolCall {
 	name: string;
-	parameters: Record<string, string | number | boolean>;
+	parameters: Record<string, Primitive>;
 	toolId?: string;
 }
 
