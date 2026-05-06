@@ -93,20 +93,49 @@
 
 		// Auto-collapse after delay when execution completes
 		if (!isExecuting && wasExecuting) {
-			const delayMs = allCompleteUpdate?.delayMs ?? 3000;
+			if (loading) {
+				// Still generating: defer collapse until next linkable block arrives.
+				// The server-side delay (TOOL_COMPLETE_DELAY_MS) guarantees minimum
+				// viewing time for tool results before the next LLM request is made.
+			} else {
+				const delayMs = allCompleteUpdate?.delayMs ?? 3000;
+				if (collapseTimer) {
+					clearTimeout(collapseTimer);
+				}
+				collapseTimer = setTimeout(() => {
+					isOpen = false;
+					collapseTimer = null;
+				}, delayMs);
+			}
+		}
 
-			// Clear any existing timer
+		// Collapse immediately when the next linkable block (tool or <think>)
+		// arrives, so there is no visual gap between this tool folding and
+		// the subsequent block appearing.
+		if (!isExecuting && hasNext && isOpen) {
+			if (collapseTimer) {
+				clearTimeout(collapseTimer);
+				collapseTimer = null;
+			}
+			isOpen = false;
+		}
+
+		wasExecuting = isExecuting;
+	});
+
+	// Fallback: if generation ends without a following linkable block,
+	// collapse after a short delay so the panel doesn't stay open forever.
+	$effect(() => {
+		if (!isExecuting && !loading && !hasNext && isOpen) {
+			const delayMs = allCompleteUpdate?.delayMs ?? 3000;
 			if (collapseTimer) {
 				clearTimeout(collapseTimer);
 			}
-
 			collapseTimer = setTimeout(() => {
 				isOpen = false;
 				collapseTimer = null;
 			}, delayMs);
 		}
-
-		wasExecuting = isExecuting;
 	});
 
 	let toolProgress = $derived.by(() => {
