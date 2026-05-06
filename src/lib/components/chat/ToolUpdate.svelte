@@ -30,6 +30,8 @@
 	let isOpen = $state(false);
 	let isDark = $state(false);
 	let wasExecuting = $state(false);
+	let wasLoading = $state(false);
+	let wasHasNext = $state(false);
 	let initialized = $state(false);
 	let collapseTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -74,14 +76,16 @@
 	let toolSuccess = $derived(toolDone && !toolError);
 	let allCompleteUpdate = $derived(tool.find(isMessageToolAllCompleteUpdate));
 
-	// Auto expand/collapse logic
+	// Auto expand/collapse logic — uses edge detection (state transitions)
+	// so that user manual open/close is never overridden by steady-state checks.
 	$effect(() => {
-		// Initialize: if already executing, auto-expand
 		if (!initialized) {
 			initialized = true;
 			if (isExecuting) {
 				isOpen = true;
 				wasExecuting = true;
+				wasLoading = loading;
+				wasHasNext = hasNext;
 				return;
 			}
 		}
@@ -91,28 +95,22 @@
 			isOpen = true;
 		}
 
-		// Auto-collapse after delay when execution completes
+		// Edge A: tool just finished executing
 		if (!isExecuting && wasExecuting) {
-			if (loading) {
-				// Still generating: defer collapse until next linkable block arrives.
-				// The server-side delay (TOOL_COMPLETE_DELAY_MS) guarantees minimum
-				// viewing time for tool results before the next LLM request is made.
-			} else {
+			if (!loading) {
+				// Generation already done — use fallback timer
 				const delayMs = allCompleteUpdate?.delayMs ?? 3000;
-				if (collapseTimer) {
-					clearTimeout(collapseTimer);
-				}
+				if (collapseTimer) clearTimeout(collapseTimer);
 				collapseTimer = setTimeout(() => {
 					isOpen = false;
 					collapseTimer = null;
 				}, delayMs);
 			}
+			// If loading is still true, do nothing — wait for edge B or C
 		}
 
-		// Collapse immediately when the next linkable block (tool or <think>)
-		// arrives, so there is no visual gap between this tool folding and
-		// the subsequent block appearing.
-		if (!isExecuting && hasNext && isOpen) {
+		// Edge B: next linkable block (tool or <think>) just appeared
+		if (hasNext && !wasHasNext && !isExecuting && isOpen) {
 			if (collapseTimer) {
 				clearTimeout(collapseTimer);
 				collapseTimer = null;
@@ -120,22 +118,19 @@
 			isOpen = false;
 		}
 
-		wasExecuting = isExecuting;
-	});
-
-	// Fallback: if generation ends without a following linkable block,
-	// collapse after a short delay so the panel doesn't stay open forever.
-	$effect(() => {
-		if (!isExecuting && !loading && !hasNext && isOpen) {
+		// Edge C: generation just ended without a following linkable block
+		if (!loading && wasLoading && !isExecuting && !hasNext && isOpen) {
 			const delayMs = allCompleteUpdate?.delayMs ?? 3000;
-			if (collapseTimer) {
-				clearTimeout(collapseTimer);
-			}
+			if (collapseTimer) clearTimeout(collapseTimer);
 			collapseTimer = setTimeout(() => {
 				isOpen = false;
 				collapseTimer = null;
 			}, delayMs);
 		}
+
+		wasExecuting = isExecuting;
+		wasLoading = loading;
+		wasHasNext = hasNext;
 	});
 
 	let toolProgress = $derived.by(() => {
