@@ -1,7 +1,7 @@
 <script lang="ts">
 	import MarkdownRenderer from "./MarkdownRenderer.svelte";
 	import BlockWrapper from "./BlockWrapper.svelte";
-	import { slide, fade } from "svelte/transition";
+	import { fade } from "svelte/transition";
 	import CarbonChevronRight from "~icons/carbon/chevron-right";
 
 	interface Props {
@@ -93,15 +93,21 @@
 			</button>
 		</div>
 
-		{#if isOpen}
-			<!-- Expanded: show full content -->
-			<div transition:slide={{ duration: 250 }} class="overflow-hidden">
+		<!-- Expanded: show full content -->
+		<div
+			class="grid transition-[grid-template-rows,opacity] duration-300 ease-in-out"
+			style="grid-template-rows: {isOpen ? '1fr' : '0fr'};"
+			class:opacity-100={isOpen}
+			class:opacity-0={!isOpen}
+			class:invisible={!isOpen}
+		>
+			<div class="min-h-0 overflow-hidden">
 				<div
 					class="prose prose-sm max-w-none select-text pt-2 text-sm leading-relaxed text-gray-500 prose-p:first:mt-0 prose-headings:first:mt-0 dark:prose-invert dark:text-gray-400"
 				>
 					<MarkdownRenderer {content} {loading} />
 				</div>
 			</div>
-		{/if}
+		</div>
 	</div>
 </BlockWrapper>
