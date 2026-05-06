@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { slide } from "svelte/transition";
 	import { MessageToolUpdateType, type MessageToolUpdate } from "$lib/types/MessageUpdate";
 	import {
 		isMessageToolCallUpdate,
@@ -286,14 +287,8 @@
 		</div>
 
 		<!-- Expandable content -->
-		<div
-			class="grid transition-[grid-template-rows,opacity] duration-300 ease-in-out"
-			style="grid-template-rows: {isOpen ? '1fr' : '0fr'};"
-			class:opacity-100={isOpen}
-			class:opacity-0={!isOpen}
-			class:invisible={!isOpen}
-		>
-			<div class="min-h-0 overflow-hidden">
+		{#if isOpen}
+			<div transition:slide={{ duration: 250 }} class="overflow-hidden">
 				<div class="pt-2 space-y-3">
 					{#each tool as update, i (`${update.subtype}-${i}`)}
 					{#if update.subtype === MessageToolUpdateType.Call}
@@ -391,6 +386,6 @@
 				{/each}
 			</div>
 		</div>
-		</div>
+	{/if}
 	</BlockWrapper>
 {/if}
